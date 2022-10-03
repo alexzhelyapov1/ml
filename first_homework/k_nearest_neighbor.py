@@ -76,7 +76,9 @@ class KNearestNeighbor:
                 # not use a loop over dimension, nor use np.linalg.norm().          #
                 #####################################################################
                 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-                dists[i, j] = np.sum((abs(self.X_train[j] ** 2 - X[i] ** 2)) ** 0.5)
+                
+                # X_train[j] - array of 1 train digit \ X[i] - array of 1 test
+                dists[i, j] = np.sum((abs(self.X_train[j] ** 2 - X[i] ** 2))) ** 0.5
                 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
 
@@ -98,7 +100,10 @@ class KNearestNeighbor:
             # Do not use np.linalg.norm().                                        #
             #######################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-            dists[i, j] = 0
+
+            # X_train[j] - array of 1 train digit \ X[i] - array of 1 test
+            # print((self.X_train ** 2 - [(X[i] ** 2).tolist()] * len(self.X_train)).tolist())
+            dists[i, :] = np.sum(abs(self.X_train ** 2 - [(X[i] ** 2).tolist()] * len(self.X_train)), axis = 1) ** 0.5
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
 
@@ -126,7 +131,16 @@ class KNearestNeighbor:
         #       and two broadcast sums.                                         #
         #########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        dists[i, j] = 0
+        # self.X_train - (1697, 64)
+        # X - (100, 64)
+        # dists - (100, 1697)
+        X_temp = [[[]]]
+        for i in range(len(X)):
+            X_temp = [X_temp] + [X[i]] * len(self.X_train)
+        X_temp = np.array(X_temp)
+        print(X_temp)
+        # print(X_temp.shape())
+        dists[:, :] = np.sum([self.X_train ** 2] * len(X) - (X_temp) ** 2, axis = 2)
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
 
@@ -156,7 +170,8 @@ class KNearestNeighbor:
             # Hint: Look up the function numpy.argsort.                             #
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-            a = 0
+            closest_y = self.y_train[np.argsort(dists[i, :])[:k]]
+            # print(closest_y)
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
             #########################################################################
             # TODO:                                                                 #
@@ -166,8 +181,8 @@ class KNearestNeighbor:
             # label.                                                                #
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-
+            from collections import Counter
+            y_pred[i] = Counter(closest_y).most_common(1)[0][0]
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         return y_pred
