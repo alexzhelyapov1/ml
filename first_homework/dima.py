@@ -1,4 +1,5 @@
 import numpy as np
+from collections import Counter
 """
 Credits: the original code belongs to Stanford CS231n course assignment1. Source link: http://cs231n.github.io/assignments2019/assignment1/
 """
@@ -65,7 +66,6 @@ class KNearestNeighbor:
         """
         num_test = X.shape[0]
         num_train = self.X_train.shape[0]
-        print()
         dists = np.zeros((num_test, num_train))
         for i in range(num_test):
             for j in range(num_train):
@@ -76,9 +76,9 @@ class KNearestNeighbor:
                 # not use a loop over dimension, nor use np.linalg.norm().          #
                 #####################################################################
                 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-                
-                # X_train[j] - array of 1 train digit \ X[i] - array of 1 test
-                dists[i, j] = np.sum((abs(self.X_train[j] ** 2 - X[i] ** 2))) ** 0.5
+
+                dists[i, j] = np.sqrt(np.sum((self.X_train[j] - X[i]) ** 2))
+
                 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
 
@@ -101,9 +101,8 @@ class KNearestNeighbor:
             #######################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            # X_train[j] - array of 1 train digit \ X[i] - array of 1 test
-            # print((self.X_train ** 2 - [(X[i] ** 2).tolist()] * len(self.X_train)).tolist())
-            dists[i, :] = np.sum(abs(self.X_train ** 2 - [(X[i] ** 2).tolist()] * len(self.X_train)), axis = 1) ** 0.5
+            dists[i, :] = np.sqrt(np.sum((self.X_train - X[i]) ** 2, axis = 1))     # Как происходит вычитание? X_train (1697, 64) X (100, 64)
+
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
 
@@ -131,13 +130,11 @@ class KNearestNeighbor:
         #       and two broadcast sums.                                         #
         #########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        # self.X_train - (1697, 64)
-        # X - (100, 64)
-        # dists - (100, 1697)
-        sx_train = np.sum(self.X_train**2, axis=1, keepdims=False)
-        print(sx_train)
+
+        sx_train = np.sum(self.X_train**2, axis=1, keepdims=True)
         sx = np.sum(X**2, axis=1, keepdims=True)
         return np.sqrt(-2 * np.dot(X, self.X_train.T) + sx_train.T + sx)
+
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
 
@@ -156,6 +153,7 @@ class KNearestNeighbor:
         """
         num_test = dists.shape[0]
         y_pred = np.zeros(num_test)
+        closest_y = np.zeros((num_test, k))
         for i in range(num_test):
             # A list of length k storing the labels of the k nearest neighbors to
             # the ith test point.
@@ -167,8 +165,11 @@ class KNearestNeighbor:
             # Hint: Look up the function numpy.argsort.                             #
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-            closest_y = self.y_train[np.argsort(dists[i, :])[:k]]
-            # print(closest_y)
+
+            closest_y[i] = np.argsort(dists[i])[:k]
+            for j in np.arange(0, k, 1):
+                closest_y[i, int(j)] = self.y_train[int(closest_y[i, int(j)])]
+
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
             #########################################################################
             # TODO:                                                                 #
@@ -178,8 +179,11 @@ class KNearestNeighbor:
             # label.                                                                #
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-            from collections import Counter
-            y_pred[i] = Counter(closest_y).most_common(1)[0][0]
+
+            unique_labels = list(Counter(closest_y[i]).keys())
+            unique_counts = list(Counter(closest_y[i]).values())
+            y_pred[i] = unique_labels[np.argmax(unique_counts)]
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         return y_pred
+
